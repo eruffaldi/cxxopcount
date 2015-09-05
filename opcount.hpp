@@ -12,7 +12,6 @@
  *		if (expr) =>   ifobj(expr); stmt1; elseobj; stmt2
  *		PROBLEM NOT SOLVED we need to enter both statements AND link ifobj1 to elseobj2
  *
- * TODO: support MAC optimization (but not reordering)
  *
  * Cortex M4F: load (2), mover(1),add(1),mul(1),mac(1),divide(14),sqrt(14)
  */
@@ -38,22 +37,25 @@ struct counted_base_t
 	using base_t = Base;
 	static int adds ;
 	static int muls ;
+	static int macs ;
 	static int divs;
 	static int trig ;
 	static int isqrt;
 	static int comps ;
 	static int cast ;
-	using serialized_t = std::array<int,7> ;
+	using serialized_t = std::array<int,8> ;
+
+	bool lastmul = false;
 
 	static void reset()
 	{
-		adds = muls = trig = isqrt = comps = cast = divs = 00;
+		adds = muls = macs = trig = isqrt = comps = cast = divs = 0;
 	}
 	static void dump()
 	{
 		char buf[256];
-		sprintf(buf,"%10s adds:%3d muls:%3d divs:%3d trig:%d sqrt:%3d comps:%3d cast:%3d\n",
-			base_t::type(),adds,muls,divs,trig,isqrt,comps,cast);
+		sprintf(buf,"%10s adds:%3d muls:%3d divs:%3d macs:%3d trig:%d sqrt:%3d comps:%3d cast:%3d\n",
+			base_t::type(),adds,muls,divs,macs,trig,isqrt,comps,cast);
 		std::cout << buf;
 	}
 
@@ -63,10 +65,11 @@ struct counted_base_t
 		adds = x[0];
 		muls = x[1];
 		divs = x[2];
-		trig = x[3];
-		isqrt = x[4];
-		comps = x[5];
-		cast = x[6];
+		macs = x[3];
+		trig = x[4];
+		isqrt = x[5];
+		comps = x[6];
+		cast = x[7];
 	}
 
 	static serialized_t sum(const serialized_t & a, const serialized_t & b)
@@ -91,6 +94,7 @@ struct counted_base_t
 template <class Base> int counted_base_t<Base>::adds = 0;
 template <class Base> int counted_base_t<Base>::muls = 0;
 template <class Base> int counted_base_t<Base>::divs = 0;
+template <class Base> int counted_base_t<Base>::macs = 0;
 template <class Base> int counted_base_t<Base>::trig = 0;
 template <class Base> int counted_base_t<Base>::isqrt = 0;
 template <class Base> int counted_base_t<Base>::comps = 0;
@@ -152,7 +156,14 @@ struct counted_t<int>: public counted_base_t<counted_t<int> >
 
 	counted_t operator + (const counted_t & o) const
 	{
-		adds++;
+		if(lastmul || o.lastmul)
+		{
+			muls--;
+			macs++;
+			// next will be regular
+		}
+		else
+			adds++;
 		return counted_t();
 	}
 
@@ -216,13 +227,26 @@ struct counted_t<float>: public counted_base_t<counted_t<float> >
 
 	counted_t operator + (const counted_t & o) const
 	{
-		adds++;
+		if(lastmul || o.lastmul)
+		{
+			macs++;
+			muls--;
+			// optimize one of the two muls
+		}
+		else
+			adds++;
 		return counted_t();
 	}
 
 	counted_t operator + (const float & o) const
 	{
-		adds++;
+		if(lastmul)
+		{
+			macs++;
+			muls--;
+		}
+		else
+			adds++;
 		return counted_t();
 	}
 
@@ -234,7 +258,14 @@ struct counted_t<float>: public counted_base_t<counted_t<float> >
 
 	counted_t operator += (const counted_t & o) const
 	{
-		adds++;
+		if(lastmul || o.lastmul)
+		{
+			macs++;
+			muls--;
+			// optimize on
+		}
+		else
+			adds++;
 		return counted_t();
 	}
 
@@ -246,14 +277,22 @@ struct counted_t<float>: public counted_base_t<counted_t<float> >
 
 	counted_t operator - (const counted_t & o) const
 	{
-		adds++;
+		if(lastmul || o.lastmul)
+		{
+			macs++;
+			muls--;
+		}
+		else
+			adds++;
 		return counted_t();
 	}
 
 	counted_t operator * (const counted_t & o) const
 	{
 		muls++;
-		return counted_t();
+		auto r = counted_t();
+		r.lastmul = true;
+		return r;
 	}
 
 	counted_t operator / (const counted_t & o) const
@@ -314,12 +353,16 @@ template <class T>
 counted_t<T> operator * (T x, const counted_t<T> & xx)
 {
 	counted_t<T>::muls++;
-	return counted_t<T>();
+	auto r = counted_t<T>();
+	r.lastmul = true;
+	return r;
 }
 
 template <class T>
 counted_t<T> operator * (int x, const counted_t<T> & xx)
 {
 	counted_t<T>::muls++;
-	return counted_t<T>();
+	auto r = counted_t<T>();
+	r.lastmul = true;
+	return r;
 }
