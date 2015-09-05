@@ -11,6 +11,10 @@
  *		GLOBAL stack (all types)
  *		if (expr) =>   ifobj(expr); stmt1; elseobj; stmt2
  *		PROBLEM NOT SOLVED we need to enter both statements AND link ifobj1 to elseobj2
+ *
+ * TODO: support MAC optimization (but not reordering)
+ *
+ * Cortex M4F: load (2), mover(1),add(1),mul(1),mac(1),divide(14),sqrt(14)
  */
 
 #pragma once
@@ -34,33 +38,35 @@ struct counted_base_t
 	using base_t = Base;
 	static int adds ;
 	static int muls ;
+	static int divs;
 	static int trig ;
 	static int isqrt;
 	static int comps ;
 	static int cast ;
-	using serialized_t = std::array<int,6> ;
+	using serialized_t = std::array<int,7> ;
 
 	static void reset()
 	{
-		adds = muls = trig = isqrt = comps = cast = 0;
+		adds = muls = trig = isqrt = comps = cast = divs = 00;
 	}
 	static void dump()
 	{
 		char buf[256];
-		sprintf(buf,"%10s adds:%3d muls:%3d trig:%d sqrt:%3d comps:%3d cast:%3d\n",
-			base_t::type(),adds,muls,trig,isqrt,comps,cast);
+		sprintf(buf,"%10s adds:%3d muls:%3d divs:%3d trig:%d sqrt:%3d comps:%3d cast:%3d\n",
+			base_t::type(),adds,muls,divs,trig,isqrt,comps,cast);
 		std::cout << buf;
 	}
 
-	static serialized_t serialize() { return {adds,muls,trig,isqrt,comps,cast}; }
+	static serialized_t serialize() { return {adds,muls,divs,trig,isqrt,comps,cast}; }
 	static void unserialzie(const serialized_t & x) 
 	{
 		adds = x[0];
 		muls = x[1];
-		trig = x[2];
-		isqrt = x[3];
-		comps = x[4];
-		cast = x[5];
+		divs = x[2];
+		trig = x[3];
+		isqrt = x[4];
+		comps = x[5];
+		cast = x[6];
 	}
 
 	static serialized_t sum(const serialized_t & a, const serialized_t & b)
@@ -84,6 +90,7 @@ struct counted_base_t
 
 template <class Base> int counted_base_t<Base>::adds = 0;
 template <class Base> int counted_base_t<Base>::muls = 0;
+template <class Base> int counted_base_t<Base>::divs = 0;
 template <class Base> int counted_base_t<Base>::trig = 0;
 template <class Base> int counted_base_t<Base>::isqrt = 0;
 template <class Base> int counted_base_t<Base>::comps = 0;
@@ -163,7 +170,7 @@ struct counted_t<int>: public counted_base_t<counted_t<int> >
 
 	counted_t operator / (const counted_t & o) const
 	{
-		muls++;
+		divs++;
 		return counted_t();
 	}	
 
@@ -251,7 +258,7 @@ struct counted_t<float>: public counted_base_t<counted_t<float> >
 
 	counted_t operator / (const counted_t & o) const
 	{
-		muls++;
+		divs++;
 		return counted_t();
 	}	
 
@@ -299,7 +306,7 @@ inline counted_t<float> sqrt(const counted_t<float> & in)
 template <class T>
 counted_t<T> operator / (T x, const counted_t<T> & xx)
 {
-	counted_t<T>::muls++;
+	counted_t<T>::divs++;
 	return counted_t<T>();
 }
 
