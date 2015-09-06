@@ -16,12 +16,12 @@ extern float sqrt(float f);
  *
  */
 
-float Ldown = 0.07;
-float Lup   = 0.183;
-float Rdown = 0.08;
-float Rup   = 0.042;
+float Ldown = 0.07f;
+float Lup   = 0.183f;
+float Rdown = 0.08f;
+float Rup   = 0.042f;
 
-float Rint  = 0; // init as Rdown -Rup;        
+float Rint  = 0.0; // init as Rdown -Rup;        
 float S01[3], S02[3], S03[3];
 float S1[3], S2[3], S3[3];
 float S12[3], S13[3], INCIRC[3], NORM[3];
@@ -96,7 +96,7 @@ m = ((y3-y1)*(x2-x1)-(y2-y1)*(x3-x1));
 yp0 = ((x2-x1)*b-(x3-x1)*a)/(2*m);
 yp1 = ((x3-x1)*(z2-z1)-(z3-z1)*(x2-x1))/m;
 
-xp0 = (0.5*a-yp0*(y2-y1))/(x2-x1);
+xp0 = (0.5f*a-yp0*(y2-y1))/(x2-x1);
 xp1 = (yp1*(y2-y1)+(z2-z1))/(x2-x1);
 
 zp0 = (xp0*xp0+yp0*yp0+z1*z1-Lup*Lup+y1*y1+x1*x1-2*(x1*xp0+yp0*y1));
@@ -179,8 +179,8 @@ float d11, d13, d33, DET, P1,P2,k; // intermediate products
     d13 = S12[X]*S13[X] + S12[Y]*S13[Y] + S12[Z]*S13[Z];
     d33 = S13[X]*S13[X] + S13[Y]*S13[Y] + S13[Z]*S13[Z];
     DET = d11*d33-d13*d13;
-    P1 = 0.5*d33*(d11-d13)/DET;
-    P2 = 0.5*d11*(d33-d13)/DET;
+    P1 = 0.5f*d33*(d11-d13)/DET;
+    P2 = 0.5f*d11*(d33-d13)/DET;
     INCIRC[X] = S12[X]*P1+S13[X]*P2;
     INCIRC[Y] = S12[Y]*P1+S13[Y]*P2;
     INCIRC[Z] = S12[Z]*P1+S13[Z]*P2;

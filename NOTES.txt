@@ -10,25 +10,25 @@ fkd
 
 opcount2 asm
 
+
 fkd:
 --classes
-	tri 6
-	load 28
-	mac 21
-	sqrt 3
-	add 23
-	others 0
-	mul 24
-	div 6
-	cmp 3
+    tri 6
+    load 32
+    mac 22
+    sqrt 4
+    add 23
+    mul 24
+    div 7
+    cmp 3
+
 USGDC:
 --classes
-	tri 6
-	load 29
-	mac 20
-	sqrt 1
-	add 15
-	others 0
-	mul 20
-	div 1
-	cmp 1
+    tri 6
+    load 31
+    mac 22
+    sqrt 2
+    add 15
+    mul 24
+    div 3
+    cmp 1

@@ -7,20 +7,19 @@ if __name__ == '__main__':
 
 	starts = set(["fkd:","USGDC:"])
 	inside = None
-	useful = set(["vmov.f32","vmla.f32","vldr","vnmul.f32","vmls.f32","cos","sin","vcmpe.f32","vmul.f32","vsub.f32","vdiv.f32","vadd.f32","sqrt"])
 	equivalences = dict([
 		("tri",("cos","sin")),
 		("div",("vdiv.f32",)),
 		("mul",("vmul.f32","vnmul.f32")),
-		("mac",("vmls.f32","vmla.f32")),
+		("mac",("vmls.f32","vmla.f32","vnmla.f32","vnmls.f32")),
 		("add",("vsub.f32","vadd.f32")),
 		("cmp",("vcmpe.f32",)),
-		("sqrt",("sqrt",)),
-		("load",("vldr","vmov.f32"))])
-	allequiv = set()
+		("sqrt",("sqrt","vsqrt.f32")),
+		("load",("vldr","vstr","vmov.f32","vmrs"))])
+	skipped = set([".fnstart","movt","movw"])
+	useful = set()
 	for y in equivalences.values():
-		allequiv = allequiv | set(y)
-	equivalences["others"] = list(useful-allequiv)
+		useful = useful | set(y)
 	print equivalences
 	counters = None
 
@@ -51,6 +50,8 @@ if __name__ == '__main__':
 		else:
 			a = x.replace("\t"," ").split(" ")
 			what = a[0]
+			if what in skipped:
+				continue
 			if a[0] == "bl":
 				what = a[1]
 			if what in useful:
