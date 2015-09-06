@@ -1,0 +1,34 @@
+
+opcount2
+----
+USGDC
+       int adds:  0 muls:  0 divs:  0 macs:  0 trig:0 sqrt:  0 comps:  0 cast:  0
+     float adds:  8 muls: 16 divs:  3 macs: 29 trig:6 sqrt:  1 comps:  0 cast:  0
+fkd
+       int adds:  0 muls:  0 divs:  0 macs:  0 trig:0 sqrt:  0 comps:  0 cast:  0
+     float adds:  3 muls: 18 divs:  7 macs: 54 trig:6 sqrt:  3 comps:  0 cast:  0
+
+opcount2 asm
+
+fkd:
+--classes
+	tri 6
+	load 28
+	mac 21
+	sqrt 3
+	add 23
+	others 0
+	mul 24
+	div 6
+	cmp 3
+USGDC:
+--classes
+	tri 6
+	load 29
+	mac 20
+	sqrt 1
+	add 15
+	others 0
+	mul 20
+	div 1
+	cmp 1

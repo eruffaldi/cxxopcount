@@ -1,7 +1,16 @@
 
-
+#ifndef BARE
 #include <stdio.h>
 #include <math.h>
+#else
+extern "C"
+{
+extern float sin(float f);
+extern float cos(float f);
+extern float sqrt(float f);
+}
+#endif
+
 /*
  *Common parameters based on Bartek Naming
  *
@@ -56,6 +65,7 @@ void USGinit()
     }
 }
 
+extern "C"
 void fkd(float fi[3])
 {
 float cf1 = cos(fi[0]);
@@ -99,6 +109,7 @@ XEEfkd[Z] = (2*zp1+sqrt(4*zp1*zp1-4*zp2*zp0))/(2*zp2);
 
 }
 
+extern "C"
 void USGDC(float fi[3])
 {
 float cf1 = cos(fi[0]);
@@ -200,6 +211,12 @@ int main(int argc, char *argv[])
     fi[1] = 0.1;
     fi[2] = 0.1;
     USGinit();
+#ifdef BARE
+    USGDC(fi);
+    float w = XEE[X];
+    fkd(fi);
+    return (int)(XEE[X]+w);
+#else
     for (fi[X]= 0.1; fi[X]<1; fi[X]+=.1)
     {
         USGDC(fi);
@@ -211,5 +228,6 @@ int main(int argc, char *argv[])
                 );
         
     }
+#endif
 } 
 
