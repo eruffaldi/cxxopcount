@@ -7,7 +7,8 @@ extern "C"
 {
 extern float sin(float f);
 extern float cos(float f);
-extern float sqrt(float f);
+//extern float sqrt(float f);
+#define sqrt __builtin_sqrtf
 }
 #endif
 
@@ -205,19 +206,23 @@ void USGinvJ()
 }
 
 
+
+#ifdef BARE
+void testme(float fi[3],float out[3],float out2[3])
+{
+    USGDC(fi);
+    fkd(fi);
+    for(int i = 0; i < 3; i++)
+        out[i] = XEEfkd[i],
+    out2[i] = XEE[i];
+}
+#else
 int main(int argc, char *argv[])
 {
     float fi[3];
     fi[1] = 0.1;
     fi[2] = 0.1;
-    USGinit();
-#ifdef BARE
-    USGDC(fi);
-    float w = XEE[X];
-    fkd(fi);
-    return (int)(XEE[X]+w);
-#else
-    for (fi[X]= 0.1; fi[X]<1; fi[X]+=.1)
+    USGinit();    for (fi[X]= 0.1; fi[X]<1; fi[X]+=.1)
     {
         USGDC(fi);
         fkd(fi);
@@ -228,6 +233,7 @@ int main(int argc, char *argv[])
                 );
         
     }
+    }
 #endif
-} 
+ 
 
