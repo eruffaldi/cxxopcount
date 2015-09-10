@@ -105,8 +105,8 @@ zp1 = (xp1*xp0-yp1*yp0+z1-x1*xp1+yp1*y1);
 zp2 = (xp1*xp1+yp1*yp1+1);
 
 XEEfkd[X] = -(2*zp1+sqrt(4*zp1*zp1-4*zp2*zp0))/(2*zp2)*xp1+xp0;
-XEEfkd[Y] = (2*zp1+sqrt(4*zp1*zp1-4*zp2*zp0))/(2*zp2)*yp1+yp0;
-XEEfkd[Z] = (2*zp1+sqrt(4*zp1*zp1-4*zp2*zp0))/(2*zp2);
+XEEfkd[Y] = (2*zp1+sqrt(4*zp2*zp1-4*zp2*zp0))/(2*zp2)*yp1+yp0; // modified to zp2
+XEEfkd[Z] = (2*zp1+sqrt(4*zp0*zp1-4*zp2*zp0))/(2*zp2); // modified to zp0
 
 }
 
