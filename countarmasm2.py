@@ -2,6 +2,18 @@
 import sys
 from collections import Counter
 
+armistr2cycle = {"vmla.f32":1,"vmul.f32":1,"vldr":1,"vmov.f32":1,"vadd.f32":1,"vsqrt.f32":14,"vdiv.f32":14,"vnmls.f32":1,"vmls.f32":1,"vsub.f32":1,"vmrs":1,"vcmpe.f32":1,"cos":14,"vnmla.f32":1,"sqrt":14,"vstr":1,"vnmul.f32":1,"sin":14}
+
+def stmt2cycles(x):
+	aa = armistr2cycle
+	return sum([b*aa[a] for a,b in x.iteritems()])
+
+class Path:
+	def __init__(self,pa,pc):
+		self.path = pa
+		self.counter = pc
+		self.total = 0
+
 class Block:
 	def __init__(self,line):
 		self.line = line
@@ -25,11 +37,12 @@ class Function:
 		self.blocks = None # list of blocks, first is root / entry
 		self.labels = None # labels
 		self.paths = [] # paths as array of blocks from root to exit point
-		self.pathscounts =[] # ops of paths
 		self.counter = None # overall ops (sum of all blocks)
 		self.ignored = None # ignore all ops
+		self.total = 0
+		self.worst = 0
 	def __str__(self):
-		return "Function(%s,%d-%d,blocks %d,paths %d)" % (self.name,self.line,self.endline,len(self.blocks),len(self.paths))
+		return "Function(%s,%d-%d,blocks %d,paths %d,worst %d)" % (self.name,self.line,self.endline,len(self.blocks),len(self.paths),self.worst)
 	def __repr__(self):
 		return self.__str__()
 
@@ -124,7 +137,7 @@ def analyze(name):
 				paths = nextpaths
 				print "LOOP",len(paths)
 
-			print "result for root",blocks[0]
+			print "result for root",blocks[0],"total blocks",len(blocks)
 			pc = []
 			for x in result:
 				total = Counter()
@@ -136,10 +149,13 @@ def analyze(name):
 			fx.endline = line
 			fx.blocks = blocks
 			fx.labels = labels
-			fx.paths = paths
-			fx.pathscounts = pc
+			fx.paths = [Path(result[i],pc[i]) for i in range(0,len(result))]
+			for p in fx.paths:
+				p.total = stmt2cycles(p.counter)
 			fx.counter = counters
 			fx.ignored = ignored
+			fx.total = stmt2cycles(fx.counter)
+			fx.worst = max([p.total for p in fx.paths])
 			functions[fx.name] = fx
 		else:	
 			x = x.replace("\t"," ")
