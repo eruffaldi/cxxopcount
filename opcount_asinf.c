@@ -1,4 +1,5 @@
 //#include "fdlibm.h"
+//https://github.com/32bitmicro/newlib-nano-1.0/blob/master/newlib/libm/math/ef_asin.c
 #define __ieee754_sqrtf __builtin_sqrtf
 #define fabsf __builtin_fabsf
 #define __uint32_t unsigned int
@@ -71,32 +72,47 @@ MAKECONST(qS4 ,  7.7038154006e-02) /* 0x3d9dc62e */
 #endif
 {
 	// 7 cases: 
-	// 1
-	// |x|>=1
-	// special when |x|<2**-27
-	// |x| < 2**-27
-	// |x| > 0.975
-	// |x|<=0.5
-	// |x|>= 0.5
+	// A) (1,inf) => NaN
+	// B) [1,1] => pi/2
+	// C) (0.975,1) => ...
+	// D) [0.5,0.975] => ...
+	// E) [2**-27,0.5) => ...
+	// F) (0,2**-27) => x 	
+	// G) [0] ==> 0
+
+	// probabilities over [0,1] divided in N steps
+	// A) 0
+	// B) 1/N
+	// C) (b-a)/N
+	// D) (b-a)/N
+	// E) 0.5/N actually E starts from > 1/N to 1/2 excli
+	// F) 0 (except for enormous N)
+	// G) 1/N
+
 	float t,w,p,q,c,r,s;
 	__int32_t hx,ix;
 	GET_FLOAT_WORD(hx,x);
-	ix = hx&0x7fffffff;
+	ix = hx&0x7fffffff; // without sign
 	if(ix==0x3f800000) {
 		/* asin(1)=+-pi/2 with inexact */
-	    return x*pio2_hi+x*pio2_lo;	
-	} else if(ix> 0x3f800000) {	/* |x|>= 1 */
-	    return (x-x)/(x-x);		/* asin(|x|>1) is NaN */   
+	    return x*pio2_hi+x*pio2_lo;	//  independent of sign and inexact
+	} else if(ix> 0x3f800000) {	/* |x|> 1 */
+	    return (x-x)/(x-x);		/* asin(|x|>1) is NaN  independent of sign */   
 	} else if (ix<0x3f000000) {	/* |x|<0.5 */
-	    if(ix<0x32000000) {		/* if |x| < 2**-27 */
-		if(huge+x>one) return x;/* return x with inexact if x!=0*/
-          } else {
-		t = x*x;
-		p = t*(pS0+t*(pS1+t*(pS2+t*(pS3+t*(pS4+t*pS5)))));
-		q = one+t*(qS1+t*(qS2+t*(qS3+t*qS4)));
-		w = p/q;
-		return x+x*w;
-          }
+	    if(ix<0x32000000) 
+	    {		
+	    	/* if |x| < 2**-27 */
+			if(huge+x>one) 
+				return x;/* return x with inexact - independent of sign*/
+        } 
+    	else 
+    	{
+				t = x*x;
+				p = t*(pS0+t*(pS1+t*(pS2+t*(pS3+t*(pS4+t*pS5)))));
+				q = one+t*(qS1+t*(qS2+t*(qS3+t*qS4)));
+				w = p/q;
+				return x+x*w; // independent of sign
+	      }
 	}
 	/* 1> |x|>= 0.5 */
 	w = one-fabsf(x);
@@ -107,7 +123,7 @@ MAKECONST(qS4 ,  7.7038154006e-02) /* 0x3d9dc62e */
 	if(ix>=0x3F79999A) { 	/* if |x| > 0.975 */
 	    w = p/q;
 	    t = pio2_hi-((float)2.0f*(s+s*w)-pio2_lo);
-	} else {
+	} else { // [0.5,0.975]
 	    __int32_t iw;
 	    w  = s;
 	    GET_FLOAT_WORD(iw,w);
@@ -118,5 +134,5 @@ MAKECONST(qS4 ,  7.7038154006e-02) /* 0x3d9dc62e */
 	    q  = pio4_hi-(float)2.0f*w;
 	    t  = pio4_hi-(p-q);
 	}    
-	if(hx>0) return t; else return -t;    
+	if(hx>0) return t; else return -t;    // recover sign
 }

@@ -1,3 +1,4 @@
+# ARM Assembler Analyzer
 import sys
 from collections import Counter
 
@@ -15,11 +16,27 @@ class Block:
 		return "Block(%d)" % self.line
 	def __repr__(self):
 		return "Block(%d)" % self.line
-if __name__ == '__main__':
 
-	o = open(sys.argv[1],"r")
+class Function:
+	def __init__(self,line,name):
+		self.line = line # start line 
+		self.endline = line # end line
+		self.name = name 
+		self.blocks = None # list of blocks, first is root / entry
+		self.labels = None # labels
+		self.paths = [] # paths as array of blocks from root to exit point
+		self.pathscounts =[] # ops of paths
+		self.counter = None # overall ops (sum of all blocks)
+		self.ignored = None # ignore all ops
+	def __str__(self):
+		return "Function(%s,%d-%d,blocks %d,paths %d)" % (self.name,self.line,self.endline,len(self.blocks),len(self.paths))
+	def __repr__(self):
+		return self.__str__()
 
-	starts = set(["fkd:","USGDC:"])
+def analyze(name):
+	o = open(name,"r")
+
+	functions = {}
 	inside = None
 	equivalences = dict([
 		("tri",("cos","sin")),
@@ -35,7 +52,6 @@ if __name__ == '__main__':
 	useful = set()
 	for y in equivalences.values():
 		useful = useful | set(y)
-	print equivalences
 	counters = None
 
 	#vmrs
@@ -44,6 +60,7 @@ if __name__ == '__main__':
 	current = None
 	labels = {}
 	last = ""
+	fx = None
 	for x in o:
 		line = line + 1
 		x = x.strip()
@@ -58,8 +75,10 @@ if __name__ == '__main__':
 				current = Block(line)
 				blocks.append(current)
 				labels = {}
+				fx = Function(line,inside)
 		elif x == ".fnend":
 			# TODO equivalence classes 
+
 			print inside
 			print "--instructions"
 			print "\n".join(["\t%s:%3d" % (k,v) for k,v in counters.iteritems()])
@@ -77,6 +96,7 @@ if __name__ == '__main__':
 					b.targetblock = labels[b.target]
 					b.next = b.targetblock
 					b.targetblock.prev.append(b)
+
 			# remove unreachable and special
 			blocks = [b for b in blocks if (b != blocks[0] or len(b.prev) > 0) and not b.label.startswith(".LCPI0")] # not fake
 			for b in blocks:
@@ -103,14 +123,24 @@ if __name__ == '__main__':
 							nextpaths.append([c] + p)
 				paths = nextpaths
 				print "LOOP",len(paths)
+
 			print "result for root",blocks[0]
+			pc = []
 			for x in result:
 				total = Counter()
 				for c in x:
 					total.update(c.counters)
+				pc.append(total)
 				print x,"\n","\n".join(["\t%s:%3d" % (k,v) for k,v in total.iteritems()])
 
-
+			fx.endline = line
+			fx.blocks = blocks
+			fx.labels = labels
+			fx.paths = paths
+			fx.pathscounts = pc
+			fx.counter = counters
+			fx.ignored = ignored
+			functions[fx.name] = fx
 		else:	
 			x = x.replace("\t"," ")
 			if x.endswith(":"):
@@ -154,7 +184,12 @@ if __name__ == '__main__':
 				else:
 					ignored[what] += 1
 		last = x
+	return functions
 
 
+if __name__ == '__main__':
+	q = analyze(sys.argv[1])
+	for k,v in q.iteritems():
+		print "\t",v
 
 
