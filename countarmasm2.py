@@ -208,4 +208,9 @@ if __name__ == '__main__':
 	for k,v in q.iteritems():
 		print "\t",v
 
+	q0 = q.values()[0]
+	if q0 == "__ieee754_asinf":
+		pass
 
+	#LBB0_7: [> 0.975]
+	#LBB0_9: [0.5,0.975]
