@@ -89,6 +89,24 @@ MAKECONST(qS4 ,  7.7038154006e-02) /* 0x3d9dc62e */
 	// F) 0 (except for enormous N)
 	// G) 1/N
 
+	// paths have lengths: 5,79,59,37,5,84,64
+	// how do they map to cases above?  ordered as above
+	//	B=5, == 0x3f800000 because of mac
+	//	E=79, sqrt+div 2 mac no comp: |x| > 7.450580596923828e-09 & |x| < 0.5
+	//	C=59, sqrt+div |x| > 0.975
+	//	A=37, division case >0x3f800000
+	//	F=5, return x : additional comp < 0x32000000 and wins hige+x>=one
+	//	D=84 strange case (<0x32000000 and then fails hug+x>=one)
+	//	C=64 >0x3F79999A 
+	//
+	// Removing the very small cases A,B,G,F:
+	// C=59 (0.975,1)
+	// D=84 (0.5,0.975)
+	// E=79 (0,0.5)
+	//
+	// updated with cmp (worstcase 88)
+	// 68*(1-0.975)+88*(0.975-0.5)+82*0.5 = 80.875
+
 	float t,w,p,q,c,r,s;
 	__int32_t hx,ix;
 	GET_FLOAT_WORD(hx,x);
@@ -99,13 +117,13 @@ MAKECONST(qS4 ,  7.7038154006e-02) /* 0x3d9dc62e */
 	} else if(ix> 0x3f800000) {	/* |x|> 1 */
 	    return (x-x)/(x-x);		/* asin(|x|>1) is NaN  independent of sign */   
 	} else if (ix<0x3f000000) {	/* |x|<0.5 */
-	    if(ix<0x32000000) 
+	    if(ix<0x32000000)  // |x| < 7.450580596923828e-09 == 2**-27
 	    {		
-	    	/* if |x| < 2**-27 */
-			if(huge+x>one) 
-				return x;/* return x with inexact - independent of sign*/
+			if(huge+x>one)  /* ??? */
+				return x;/* return x with inexact */
+	    	// ?? else what??
         } 
-    	else 
+    	else // |x| > 7.450580596923828e-09 & |x| < 0.5
     	{
 				t = x*x;
 				p = t*(pS0+t*(pS1+t*(pS2+t*(pS3+t*(pS4+t*pS5)))));

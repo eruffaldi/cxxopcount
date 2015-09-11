@@ -2,17 +2,22 @@
 import sys
 from collections import Counter
 
-armistr2cycle = {"vmla.f32":1,"vmul.f32":1,"vldr":1,"vmov.f32":1,"vadd.f32":1,"vsqrt.f32":14,"vdiv.f32":14,"vnmls.f32":1,"vmls.f32":1,"vsub.f32":1,"vmrs":1,"vcmpe.f32":1,"cos":14,"vnmla.f32":1,"sqrt":14,"vstr":1,"vnmul.f32":1,"sin":14}
+armistr2cycle = {"vmla.f32":1,"cmp":1,"vmul.f32":1,"vldr":1,"vmov.f32":1,"vadd.f32":1,"vsqrt.f32":14,"vdiv.f32":14,"vnmls.f32":1,"vmls.f32":1,"vsub.f32":1,"vmrs":1,"vcmpe.f32":1,"cos":14,"vnmla.f32":1,"sqrt":14,"vstr":1,"vnmul.f32":1,"sin":14}
 
 def stmt2cycles(x):
 	aa = armistr2cycle
 	return sum([b*aa[a] for a,b in x.iteritems()])
 
 class Path:
-	def __init__(self,pa,pc):
+	def __init__(self,pa,pc,t):
 		self.path = pa
 		self.counter = pc
-		self.total = 0
+		self.total = t
+	def __str__(self):
+		return "Path(lastline=%d,blocks=%d,total=%d)" % (self.path[-1].line,len(self.path),self.total)
+	def __repr__(self):
+		return self.__str__()
+
 
 class Block:
 	def __init__(self,line):
@@ -27,7 +32,7 @@ class Block:
 	def __str__(self):
 		return "Block(%d)" % self.line
 	def __repr__(self):
-		return "Block(%d)" % self.line
+		return self.__str__()
 
 class Function:
 	def __init__(self,line,name):
@@ -52,6 +57,7 @@ def analyze(name):
 	functions = {}
 	inside = None
 	equivalences = dict([
+		("cmpi",("cmp",)),
 		("tri",("cos","sin")),
 		("div",("vdiv.f32",)),
 		("mul",("vmul.f32","vnmul.f32")),
@@ -124,18 +130,18 @@ def analyze(name):
 				nextpaths = []
 				for p in paths:
 					if p[0] == b:
-						print "root",p[0]
+						#print "root",p[0]
 						result.append(p)
 					elif len(p[0].prev) == 0:						
-						print "strange non root",p[0]
+						#print "strange non root",p[0]
 						result.append(p)
 					else:
-						print "not root",p[0],len(p[0].prev)
+						#print "not root",p[0],len(p[0].prev)
 						for c in p[0].prev:
-							print "adding",c,"to",p
+							#print "adding",c,"to",p
 							nextpaths.append([c] + p)
 				paths = nextpaths
-				print "LOOP",len(paths)
+				#print "LOOP",len(paths)
 
 			print "result for root",blocks[0],"total blocks",len(blocks)
 			pc = []
@@ -143,15 +149,14 @@ def analyze(name):
 				total = Counter()
 				for c in x:
 					total.update(c.counters)
-				pc.append(total)
-				print x,"\n","\n".join(["\t%s:%3d" % (k,v) for k,v in total.iteritems()])
+				pp = Path(x,total,stmt2cycles(total))
+				pc.append(pp)
+				print pp,"\n","\n".join(["\t%s:%3d" % (k,v) for k,v in total.iteritems()])
 
 			fx.endline = line
 			fx.blocks = blocks
 			fx.labels = labels
-			fx.paths = [Path(result[i],pc[i]) for i in range(0,len(result))]
-			for p in fx.paths:
-				p.total = stmt2cycles(p.counter)
+			fx.paths = pc
 			fx.counter = counters
 			fx.ignored = ignored
 			fx.total = stmt2cycles(fx.counter)
